@@ -1,0 +1,71 @@
+name: Build Windows App (.msi)
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Kodu Klonla
+        uses: actions/checkout@v4
+
+      - name: Java 21 Kurulumu
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Gradle Onbellek ve Kurulum
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Windows MSI Kurulum Paketini Derle
+        run: |
+          ./gradlew packageMsi --stacktrace
+
+      - name: Olusan Kurulum Dosyasini Bul
+        id: find_msi
+        shell: pwsh
+        run: |
+          $msiFile = Get-ChildItem -Path "app/build/compose/binaries/main/msi" -Filter "*.msi" -Recurse | Select-Object -First 1
+          if ($msiFile) {
+              Write-Host "Bulunan MSI: $($msiFile.FullName)"
+              echo "msi_path=$($msiFile.FullName)" >> $env:GITHUB_OUTPUT
+              echo "msi_name=$($msiFile.Name)" >> $env:GITHUB_OUTPUT
+          } else {
+              Write-Error "MSI dosyasi bulunamadi!"
+              exit 1
+          }
+
+      - name: Kurulum Dosyasini Artifact Olarak Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: MechiPuantaj-Windows-Kurulum
+          path: ${{ steps.find_msi.outputs.msi_path }}
+          retention-days: 30
+
+      - name: Otomatik GitHub Release Olustur
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.2.0
+          name: "Mechi Personel Takip & Bordro v1.2.0 (Windows)"
+          body: |
+            ### 🚀 Mechi Puantaj & Bordro Otomasyonu
+            GitHub bulut sunucuları tarafından otomatik olarak derlenmiştir.
+            
+            **Kurulum:**
+            1. Aşağıdaki **`.msi`** dosyasını indirin.
+            2. Çift tıklayarak kurulumu tamamlayın.
+            3. Masaüstünüze gelen **Mechi Puantaj** kısayolundan uygulamayı hemen kullanmaya başlayın.
+          files: ${{ steps.find_msi.outputs.msi_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
