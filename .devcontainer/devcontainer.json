@@ -1,0 +1,31 @@
+{
+  "name": "Mechi Personel Takip - Web GUI (Tarayici)",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "version": "latest",
+      "password": "mechi"
+    }
+  },
+  "forwardPorts": [6080],
+  "portsAttributes": {
+    "6080": {
+      "label": "Mechi Puantaj Masaüstü Ekranı",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "chmod +x gradlew && chmod +x .devcontainer/setup-desktop.sh && .devcontainer/setup-desktop.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-21",
+            "path": "/usr/lib/jvm/java-21-openjdk-amd64",
+            "default": true
+          }
+        ]
+      }
+    }
+  }
+}
